@@ -28,7 +28,7 @@ PRIORITY_MAPPING = {
 
 
 def send_mail(subject, message, from_email, recipient_list, priority="medium",
-              fail_silently=False, auth_user=None, auth_password=None):
+              fail_silently=False, auth_user=None, auth_password=None, headers=None):
     from django.utils.encoding import force_unicode
     from mailer.models import make_message
     
@@ -37,18 +37,21 @@ def send_mail(subject, message, from_email, recipient_list, priority="medium",
     # need to do this in case subject used lazy version of ugettext
     subject = force_unicode(subject)
     message = force_unicode(message)
+    if not headers:
+        headers = {}
     
     make_message(subject=subject,
                  body=message,
                  from_email=from_email,
                  to=recipient_list,
-                 priority=priority).save()
+                 priority=priority,
+                 headers=headers).save()
     return 1
 
 
 def send_html_mail(subject, message, message_html, from_email, recipient_list,
                    priority="medium", fail_silently=False, auth_user=None,
-                   auth_password=None):
+                   auth_password=None, headers=None):
     """
     Function to queue HTML e-mails
     """
@@ -62,11 +65,15 @@ def send_html_mail(subject, message, message_html, from_email, recipient_list,
     subject = force_unicode(subject)
     message = force_unicode(message)
     
+    if not headers:
+        headers = {}
+    
     msg = make_message(subject=subject,
                        body=message,
                        from_email=from_email,
                        to=recipient_list,
-                       priority=priority)
+                       priority=priority,
+                       headers=headers)
     email = msg.email
     email = EmailMultiAlternatives(email.subject, email.body, email.from_email, email.to)
     email.attach_alternative(message_html, "text/html")
@@ -80,7 +87,7 @@ def send_mass_mail(datatuple, fail_silently=False, auth_user=None,
     from mailer.models import make_message
     num_sent = 0
     for subject, message, sender, recipient in datatuple:
-        num_sent += send_mail(subject, message, sender, recipient)
+        num_sent += send_mail(subject, message, sender, recipient, headers={'Precedence':'bulk'})
     return num_sent
 
 
